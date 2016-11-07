@@ -11,6 +11,7 @@
 - L298N电机驱动模块
 - 淘到的12V/1.5A电机(非全速运行)
 - 8.4V锂电池平衡充及自制电源模块
+
 ## 软件
 应用了Arduino IDE进行软件设计,应用的库放在了Arduino/Library目录,请将这部分库移动到我的文档/Arduino/libraries中后再进行编译。
 ## APP
@@ -19,7 +20,9 @@
 - react-native-cli工具
 - react-native-bluetooth-serial模块
 - react-native-material-design模块
+
 受限于开发条件（没有钱买Mac），目前仅完成安卓部分。
+
 # Simple Smart Air Purfier Project
 It's a simple open-source air purifier model.
 ## Hardware
@@ -31,13 +34,16 @@ The documents of hardware isn't open-source now,connection pins can be found in 
 - L298N motor-drive module
 - a simple 12V/1.5A fan
 - 8.4V power module
+
 ## Software
 I finish development with Arduino IDE,project depend on some libraries on Arduino/Library folder,Please compile after move these to My Documents/Arduino/libraries.
+
 ## APP
 Tech-Stack:
 - React Native
 - react-native-cli Tool
 - react-native-bluetooth-serial Module
 - react-native-material-design Module
+
 Android Only!!!(Because I'm poor for Mac)
 
