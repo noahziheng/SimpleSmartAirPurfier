@@ -1,0 +1,9 @@
+<resources>
+
+    <!-- Base application theme. -->
+    <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
+        <!-- 这里将刚刚那张图片设置为背景图片， splash对应图片名称 -->
+        <item name="android:windowBackground">@drawable/splash</item>
+    </style>
+
+</resources>
