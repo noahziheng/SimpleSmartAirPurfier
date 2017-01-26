@@ -12,19 +12,28 @@
 #define PIN_LEDG 13
 #define FILTER_N 200
 
+// Library Init
 GP2Y1010AU0F GP2Y1010AU0F(PIN_LED, PIN_OUTPUT);
 SoftwareSerial SoftSerial(8, 9); // RX, TX
 dht11 DHT11;
-int motor=0;
+
+bool mode=false;
+bool motor=false;
 int mspeed=100;
+int temp=0;
+int hyd=0;
+double pm=0.0;
 int aqi=0;
 int AQIL=80;
 int AQIH=150;
-int mode=0;
 int t=0;
 bool warning = false;
 int warning_c = 0;
 char data_f='\0';
+
+bool initF = false;
+String productId = "S1Oy49-Pg";
+String productSecret = "f19f86887820e73d0815d50a2ae888562831857c";
 
 double getPM() {
   int i;
@@ -51,8 +60,7 @@ double getPM() {
   filter_sum = filter_sum / i;
   double outputV = filter_sum;
   double ugm3 = GP2Y1010AU0F.getDustDensity(outputV); //计算灰尘浓度
-  double aqi = GP2Y1010AU0F.getAQI(ugm3); //计算aqi
-  return(aqi);
+  return(ugm3);
 }
 
 void getTemp () {
@@ -92,57 +100,55 @@ void setup() {
   digitalWrite(PIN_LEDR,HIGH);
   digitalWrite(PIN_LEDB,LOW);
   digitalWrite(PIN_LEDG,HIGH);
+
+  SoftSerial.print("+P:" + productId + ',' + productSecret + ';');
+  Serial.println("DEBUG|P:" + productId + ',' + productSecret);
 }
 
 void loop() { // run over and over
   if (SoftSerial.available()) {
     String msg = SoftSerial.readStringUntil(';');
-    StaticJsonBuffer<200> jsonBuffer;
-    JsonObject& root = jsonBuffer.parseObject(msg);
-    if(root.containsKey("tag")) {
-      int tag_t = root["tag"];
-      if(tag_t==0){
-        digitalWrite(PIN_LEDR,HIGH);
-        digitalWrite(PIN_LEDB,HIGH);
-        digitalWrite(PIN_LEDG,LOW);
-      }else if(tag_t==1){
-        digitalWrite(PIN_LEDR,HIGH);
-        digitalWrite(PIN_LEDB,LOW);
-        digitalWrite(PIN_LEDG,HIGH);
+    msg = msg.substring(msg.indexOf("+") + 1);
+    if (msg == "O") {
+      initF = true;
+      digitalWrite(PIN_LEDR,HIGH);
+      digitalWrite(PIN_LEDB,HIGH);
+      digitalWrite(PIN_LEDG,LOW);
+    }else{
+      if (initF) {
+        StaticJsonBuffer<200> jsonBuffer;
+        JsonObject& root = jsonBuffer.parseObject(msg);
+        if(root.containsKey("MODE")) {
+          mode = root["MODE"];
+        }
+        if(root.containsKey("M")) {
+          motor = root["M"];
+        }
+        if(root.containsKey("S")) {
+          mspeed = root["S"];
+        }
+        if(root.containsKey("AQIL")) {
+          AQIL = root["AQIL"];
+        }
+        if(root.containsKey("AQIH")) {
+          AQIH = root["AQIH"];
+        }
+        //sscanf(msg,"C:%d:%d:%d:%d:%d",mode,motor,mspeed,AQIL,AQIH);
+        msg="";
+        SoftSerial.flush();
+        Serial.print("DEBUG|");
+        Serial.print("Mode:");
+        Serial.print(mode);
+        Serial.print("|Motor:");
+        Serial.print(motor);
+        Serial.print("|Speed:");
+        Serial.print(mspeed);
+        Serial.print("|AQIL:");
+        Serial.print(AQIL);
+        Serial.print("|AQIH:");
+        Serial.println(AQIH);
       }
     }
-    if(root.containsKey("warning") && root["warning"]==0) {
-      warning=!warning;
-    }
-    if(root.containsKey("mode")) {
-      mode = root["mode"];
-    }
-    if(root.containsKey("motor")) {
-      motor = root["motor"];
-    }
-    if(root.containsKey("speed")) {
-      mspeed = root["speed"];
-    }
-    if(root.containsKey("AQIL")) {
-      AQIL = root["AQIL"];
-    }
-    if(root.containsKey("AQIH")) {
-      AQIH = root["AQIH"];
-    }
-    //sscanf(msg,"C:%d:%d:%d:%d:%d",mode,motor,mspeed,AQIL,AQIH);
-    msg="";
-    SoftSerial.flush();
-    Serial.print("DEBUG|");
-    Serial.print("Mode:");
-    Serial.print(mode);
-    Serial.print("|Motor:");
-    Serial.print(motor);
-    Serial.print("|Speed:");
-    Serial.print(mspeed);
-    Serial.print("|AQIL:");
-    Serial.print(AQIL);
-    Serial.print("|AQIH:");
-    Serial.println(AQIH);
   }
   if(!motor) {
     analogWrite(PIN_PWM,0);
@@ -151,13 +157,13 @@ void loop() { // run over and over
   }
   if(mode){
     if(aqi >= AQIH){
-      motor=1;
+      motor=true;
       int t=aqi-AQIH;
       if(t+100 > 255) t=155;
       mspeed=t+100;
       warning=true;
     }else if(aqi <= AQIL){
-      motor=0;
+      motor=false;
       mspeed=100;
       warning=false;
     }
@@ -175,14 +181,53 @@ void loop() { // run over and over
   }else if (warning_c!=0){
     warning_c=0;
   }
-  if (t==300) {
+  if (t == 300 || t == 600 || t == 900) {
     getTemp();
-    char msg_s[128];
-    double pm = getPM();
-    aqi=(int)pm;
-    sprintf(msg_s, "{\"temp\":%d,\"hyd\":%d,\"AQI\":%d}",DHT11.temperature, DHT11.humidity,(int)pm);
-    SoftSerial.println(msg_s);
-    t=0;
+    double pm_t = getPM();
+    int aqi_t=(int)GP2Y1010AU0F.getAQI(pm);
+    int temp_t=DHT11.temperature;
+    int hyd_t=DHT11.humidity;
+    StaticJsonBuffer<200> jsonBuffer;
+    JsonObject& root = jsonBuffer.createObject();
+    bool empty = true;
+    if (temp_t != temp) {
+      root["T"] = temp_t;
+      temp = temp_t;
+      if(empty) empty = false;
+    }
+    if (hyd_t != hyd) {
+      root["H"] = hyd_t;
+      hyd = hyd_t;
+      if(empty) empty = false;
+    }
+    if (pm_t != pm) {
+      root["PM"] = pm_t;
+      pm = pm_t;
+      if(empty) empty = false;
+    }
+    if (aqi_t != aqi) {
+      root["AQI"] = aqi_t;
+      aqi = aqi_t;
+      if(empty) empty = false;
+    }
+    if (!empty) {
+      SoftSerial.print("+");
+      root.printTo(SoftSerial);
+      SoftSerial.print(";");
+      Serial.print("DEBUG|");
+      root.printTo(Serial);
+      Serial.println("");
+    }
+    if (t == 900) {
+      char msg_s[128];
+      double pm = getPM();
+      aqi=(int)pm;
+      sprintf(msg_s, "+{\"MODE\":%d,\"M\":%d,\"S\":%d,\"AQIL\":%d,\"AQIH\":%d};",mode, motor, mspeed, AQIL, AQIH);
+      SoftSerial.print(msg_s);
+      Serial.print("DEBUG|");
+      Serial.println(msg_s);
+      t=0;
+    } else t++;
   }else{
     t++;
   }

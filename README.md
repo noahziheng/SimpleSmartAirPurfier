@@ -14,7 +14,7 @@
 
 ## 软件
 应用了Arduino IDE进行软件设计,应用的库放在了Arduino/Library目录,请将这部分库移动到我的文档/Arduino/libraries中后再进行编译。
-## APP
+## APP  (接入FreeIOT后废弃)
 直接列出技术栈：
 - React Native
 - react-native-cli工具
@@ -38,7 +38,7 @@ The documents of hardware isn't open-source now,connection pins can be found in 
 ## Software
 I finish development with Arduino IDE,project depend on some libraries on Arduino/Library folder,Please compile after move these to My Documents/Arduino/libraries.
 
-## APP
+## APP  (Droped when join FreeIOT)
 Tech-Stack:
 - React Native
 - react-native-cli Tool
