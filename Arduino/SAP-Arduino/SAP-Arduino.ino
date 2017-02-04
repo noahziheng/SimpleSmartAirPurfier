@@ -181,7 +181,7 @@ void loop() { // run over and over
   }else if (warning_c!=0){
     warning_c=0;
   }
-  if (t == 300 || t == 600 || t == 900) {
+  if ((t == 300 || t == 600 || t == 900) && initF) {
     getTemp();
     double pm_t = getPM();
     int aqi_t=(int)GP2Y1010AU0F.getAQI(pm);
